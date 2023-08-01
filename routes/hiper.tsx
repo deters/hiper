@@ -17,7 +17,7 @@ export const handler: Handlers<Result | null> = {
     //    const  query  = `PAO`;//ctx.params;
 
     const url = new URL(req.url);
-    const query = url.searchParams.get("query") || "";
+    const query = url.searchParams.get("query")?.toUpperCase().normalize('NFD').replace(/\p{Mn}/gu, "") || "";
 
     const resp = await fetch(
       "https://search.osuper.com.br/ecommerce_products_production/_search",
@@ -71,7 +71,7 @@ export const handler: Handlers<Result | null> = {
           amount_price: Math.round(node.price / (node.amount) * 100) / 100,
         });
       })
-      .filter((p) => p.name.toUpperCase().startsWith(query))
+      .filter((p) => p.name.toUpperCase().normalize('NFD').replace(/\p{Mn}/gu, "").startsWith(query))
       .sort(compare);
 
     console.log(lista);
