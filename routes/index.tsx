@@ -7,6 +7,8 @@ interface Result {
   l: number;
   m: number;
   un: number;
+  medida?: string;
+  med?: string;
   amount: number;
   amount_price: number;
   image?: string;
@@ -60,6 +62,7 @@ export const handler: Handlers<Result | null> = {
           l: litros(node.name+ ` `),
           m: metros(node.name+ ` `),
           un: unidades(node.name+ ` `),
+
           amount:
             (kilogramas(node.name+ ` `) || litros(node.name+ ` `) || metros(node.name+ ` `) ||
               1) * (unidades(node.name+ ` `) || 1),
@@ -68,7 +71,16 @@ export const handler: Handlers<Result | null> = {
       })
       .map((node) => {
         return Object.assign({}, node, {
-          amount_price: Math.round(node.price / (node.amount) * 100) / 100,
+          medida: node.kg? `kg` : node.l? `litro`: node.m? `metro` : node.un? `unidade` : `?`,
+          med: node.kg? `kg` : node.l? `l`: node.m? `m` : node.un? `un.` : `?`,
+          amount: node.m || node.kg || node.l || node.un ?
+            (kilogramas(node.name+ ` `) || litros(node.name+ ` `) || metros(node.name+ ` `) ||
+              1) * (unidades(node.name+ ` `) || 1) : null 
+        });
+      })
+      .map((node) => {
+        return Object.assign({}, node, {
+          amount_price: node.amount ? Math.round(node.price / (node.amount) * 100) / 100 : null,
         });
       })
       .filter((p) => p.name.toUpperCase().normalize('NFD').replace(/\p{Mn}/gu, "").startsWith(query))
@@ -109,98 +121,49 @@ export default function Page({ data }: PageProps<Result[] | null>) {
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossOrigin="anonymous"/>
 
-      <div class="">
-        <form class="form form-inline center">
+      <div class="container" style="margin: 20px!;">
+        <form class="form form-inline center" style="margin: 20px;">
           <input class="input" name="query" />
           <input class="default" type="submit" />
         </form>
-      </div>
-
-      <table class="table table-bordered">
-        <tr>
-          <td>
-            Imagem
-          </td>
-
-          <td>
-            Nome
-          </td>
-
-          <td>
-            Preço
-          </td>
-
-          <td>
-            Kg
-          </td>
-
-          <td>
-            l
-          </td>
-
-          <td>
-            m
-          </td>
-
-          <td>
-            un
-          </td>
-
-          <td>
-            Quantidade real
-          </td>
-
-          <td>
-            Preço real
-          </td>
-        </tr>
+        
+          <div class="row">
         {data.map((item) => (
-          <tr>
-            <td>
+          
+          
+          <div class="col-md-3" style="padding: 30px;">
+              <div>
               <img
                 style="display: inline;"
                 src={item.image}
                 width={200}
                 height={200}
               />
-            </td>
-
-            <td>
-              <div style="display: inline; margin: 10px;">{item.name}</div>
-            </td>
-
-            <td>
-              <div style="display: inline;  margin: 10px;">{item.price}</div>
-            </td>
-
-            <td>
-              <div style="display: inline;  margin: 10px;">{item.kg}</div>
-            </td>
-
-            <td>
-              <div style="display: inline;  margin: 10px;">{item.l}</div>
-            </td>
-
-            <td>
-              <div style="display: inline;  margin: 10px;">{item.m}</div>
-            </td>
-
-            <td>
-              <div style="display: inline;  margin: 10px;">{item.un}</div>
-            </td>
-
-            <td>
-              <div style="display: inline;  margin: 10px;">{item.amount}</div>
-            </td>
-
-            <td>
-              <div style="display: inline;  margin: 10px;">
-                {item.amount_price}
               </div>
-            </td>
-          </tr>
+            
+              <div>            
+                <div>{item.name}</div>
+              </div>
+
+
+              <div>
+               <big>R$ {item.price}</big> 
+              
+
+              <div style="display: block; float: right;">
+            <small> R$ {item.amount_price} / {item.medida}</small>
+
+             </div>
+            </div>
+
+            </div>
+
+
         ))}
-      </table>
+
+          </div>
+      </div>
+
     </>
   );
 }
@@ -248,7 +211,7 @@ function metros(name: string) {
 }
 
 function unidades(name: string) {
-  let unidades = /([0-9]+)u[n ]/;
+  let unidades = /([0-9]+) ?u[n ]/;
   let match = name.match(unidades);
   if (match) {
     return parseInt(match[1]);
@@ -274,6 +237,9 @@ function unidades(name: string) {
 }
 
 function compare(a, b) {
+  if (!a.amount_price || !b.amount_price ){
+    return 1;
+  }
   if (a.amount_price < b.amount_price) {
     return -1;
   }
